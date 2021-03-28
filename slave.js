@@ -1,8 +1,5 @@
-const path = require('path');
-const http = require('https');
 const fs = require('fs');
 const got = require('got');
-const { exec } = require('child_process');
 const readline = require('readline');
 const rl = readline.createInterface({
   input: process.stdin,
