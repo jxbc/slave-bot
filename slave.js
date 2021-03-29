@@ -1,4 +1,4 @@
-const fs = require('fs');
+const path = require('path');
 const got = require('got');
 const readline = require('readline');
 const rl = readline.createInterface({
@@ -51,33 +51,41 @@ let slaveBuy = async (id) => {
 	} catch (ex) {
 		let res = ex.response.body;
 		if(res.error) {
-			switch (res.error.message) {
-				case 'ErrFloodJob app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете нанимать на работу (ErrFloodJob)");
-					break
-				case 'NotYouSlave app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Похоже, что раб уже вам не пренадлежит (NotYouSlave)");
-					break
-				case 'ErrFloodBuy app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете покупать рабов (ErrFloodBuy)");
-					break
-				case 'SalveAreLocked app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Раб на цепи (SalveAreLocked)");
-					break
-				case 'ErrLowMoney app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Недостаточно денег либо пользователь был забаган накруткой (ErrLowMoney)");
-					break
-				case 'ErrFloodFetter app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, нельзя так часто сажать на цепь пользователей (ErrFloodFetter)");
-					break
-				case 'Invalid sign 3':
-					console.log("\x1b[31m%s", "<Ошибка> Неверный Bearer, проверьте строку Auth в файле config.js (Invalid Sign)");
-					break
-				default: if(cfg.exception) console.log("\x1b[33m%s", res.error);
-			}
+			handleError(res.error)
 		}
 	}
 }
+
+let slaveFetter = async (id) => {
+	try {
+		const {body} = await got.post("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/buyFetter", {
+			responseType: "json",
+			headers: {
+				"authorization": cfg.auth,
+				"user-agent": cfg.ua,
+				"referer": cfg.prod,
+				"origin": cfg.prod
+			},
+			json: {slave_id: id}
+		})
+
+
+		if(body.error)
+		{
+			console.log(body.error)
+		}
+		else
+		{
+			console.log('\x1b[33m%s\x1b[36m%s\x1b[0m%s', '[+]', `[${id}] `, `Посадил пользователя в оковы`)
+		}
+	} catch (ex) {
+		let res = ex.response.body;
+		if(res.error) {
+			handleError(res.error)
+		}
+	}
+}
+
 let slaveJob = async (name, id) =>  {
 	try {
 		const {body} = await got.post("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/jobSlave", {
@@ -103,27 +111,7 @@ let slaveJob = async (name, id) =>  {
 	} catch (ex) {
 		let res = ex.response.body;
 		if(res.error) {
-			switch (res.error.message) {
-				case 'ErrFloodJob app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете нанимать на работу (ErrFloodJob)");
-					break
-				case 'NotYouSlave app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Похоже, что раб уже вам не пренадлежит (NotYouSlave)");
-					break
-				case 'ErrFloodBuy app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете покупать рабов (ErrFloodBuy)");
-					break
-				case 'SalveAreLocked app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Раб на цепи (SalveAreLocked)");
-					break
-				case 'ErrLowMoney app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Недостаточно денег либо пользователь был забаган накруткой (ErrLowMoney)");
-					break
-				case 'ErrFloodFetter app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, нельзя так часто сажать на цепь пользователей (ErrFloodFetter)");
-					break
-				default: if(cfg.exception) console.log("\x1b[33m%s", res.error);
-			}
+			handleError(res.error)
 		}
 	}
 }
@@ -148,36 +136,13 @@ let slaveUser = async (id) => {
 			if(body.id)
 			{
 				slaveList(body.id)
-				console.log('\x1b[34m%s\x1b[0m%s\x1b[32m%s\x1b[0m%s', '[/]', '[', `${body.id}`, ']', `Найден новый пользователь!`)
+				console.log('\x1b[34m%s\x1b[0m%s\x1b[32m%s\x1b[0m%s', '[/]', '[', `${body.id}`, ']', `Ищу рабов у пользователя...`)
 			}
 		}
 	} catch (ex) {
 		let res = ex.response.body;
 		if(res.error) {
-			switch (res.error.message) {
-				case 'ErrFloodJob app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете нанимать на работу (ErrFloodJob)");
-					break
-				case 'NotYouSlave app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Похоже, что раб уже вам не пренадлежит (NotYouSlave)");
-					break
-				case 'ErrFloodBuy app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете покупать рабов (ErrFloodBuy)");
-					break
-				case 'SalveAreLocked app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Раб на цепи (SalveAreLocked)");
-					break
-				case 'ErrLowMoney app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Недостаточно денег либо пользователь был забаган накруткой (ErrLowMoney)");
-					break
-				case 'ErrFloodFetter app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, нельзя так часто сажать на цепь пользователей (ErrFloodFetter)");
-					break
-				case 'Invalid sign 3':
-					console.log("\x1b[31m%s", "<Ошибка> Неверный Bearer, проверьте строку Auth в файле config.js (Invalid Sign)");
-					break
-				default: if(cfg.exception) console.log("\x1b[33m%s", res.error);
-			}
+			handleError(res.error)
 		}
 	}
 }
@@ -209,31 +174,11 @@ let slaveMaster = async (id) => {
 	} catch (ex) {
 		let res = ex.response.body;
 		if(res.error) {
-			switch (res.error.message) {
-				case 'ErrFloodJob app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете нанимать на работу (ErrFloodJob)");
-					break
-				case 'NotYouSlave app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Похоже, что раб уже вам не пренадлежит (NotYouSlave)");
-					break
-				case 'ErrFloodBuy app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете покупать рабов (ErrFloodBuy)");
-					break
-				case 'SalveAreLocked app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Раб на цепи (SalveAreLocked)");
-					break
-				case 'ErrLowMoney app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Недостаточно денег либо пользователь был забаган накруткой (ErrLowMoney)");
-					break
-				case 'ErrFloodFetter app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, нельзя так часто сажать на цепь пользователей (ErrFloodFetter)");
-					break
-				default: if(cfg.exception) console.log("\x1b[33m%s", res.error);
-			}
+			handleError(res.error)
 		}
 	}
 }
-async function slaveList(id){
+let slaveList = async (id) => {
 	try {
 		const {body} = await got.get("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/slaveList?id="+id, {
 			responseType: "json",
@@ -246,32 +191,42 @@ async function slaveList(id){
 		})
 		for(let i in body.slaves)
 		{
-				if((body.slaves[i].price > cfg.mode_.min_buy) && body.slaves[i].price < cfg.mode_.max_buy && body.slaves[i].item_type == "user")
+				if((body.slaves[i].price >= cfg.mode_.min_buy) && body.slaves[i].price <= cfg.mode_.max_buy && body.slaves[i].item_type == "user")
 				{
 						slaveBuy(body.slaves[i].id);
-							await sleep(cfg.timeout);
+							await sleep(rand(cfg.min_delay, cfg.max_delay));
 						slaveJob(arr[rand(0, 10)], body.slaves[i].id);
-							await sleep(cfg.timeout);
+							await sleep(rand(cfg.min_delay, cfg.max_delay));
+						if(cfg.ocows.ocow) { 
+							slaveFetter(body.slaves[i].id);
+							await sleep(rand(cfg.min_delay, cfg.max_delay));
+						}
 				}
 				else
 				{
-					await sleep(2000)
-					slaveUser(rand(1000000,631111111))
+					await sleep(rand(2100, 4600))
+					return slaveUser(rand(1000000,631111111))
 				}
 		}
 		if(!body.slaves[0])
 		{
-			slaveMaster(id)
+			return slaveMaster(id)
 		}
 	} catch (ex) {
 		let res = ex.response.body;
 		if(res.error) {
-			switch (res.error.message) {
+			handleError(res.error)
+		}
+	}
+}
+
+let handleError = (err) => {
+	switch (err.message) {
 				case 'ErrFloodJob app_error': 
 					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете нанимать на работу (ErrFloodJob)");
 					break
 				case 'NotYouSlave app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Похоже, что раб уже вам не пренадлежит (NotYouSlave)");
+					console.log("\x1b[31m%s", "<Ошибка> Похоже, что ты раб (хз что это за ошибка :D) (NotYouSlave)");
 					break
 				case 'ErrFloodBuy app_error': 
 					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, теперь вы не можете покупать рабов (ErrFloodBuy)");
@@ -280,14 +235,15 @@ async function slaveList(id){
 					console.log("\x1b[31m%s", "<Ошибка> Раб на цепи (SalveAreLocked)");
 					break
 				case 'ErrLowMoney app_error': 
-					console.log("\x1b[31m%s", "<Ошибка> Недостаточно денег либо пользователь был забаган накруткой (ErrLowMoney)");
+					console.log("\x1b[31m%s", "<Ошибка> У вас недостаточно денег либо пользователь был забаган накруткой (ErrLowMoney)");
 					break
 				case 'ErrFloodFetter app_error': 
 					console.log("\x1b[31m%s", "<Ошибка> Вам прилетел бан, нельзя так часто сажать на цепь пользователей (ErrFloodFetter)");
 					break
-				default: if(cfg.exception) console.log("\x1b[33m%s", res.error);
-			}
-		}
+				case 'Invalid sign 3':
+					console.log("\x1b[31m%s", "<Ошибка> Неверный Bearer, проверьте строку Auth в файле config.js (Invalid Sign)");
+					break
+				default: if(cfg.exception) console.log("\x1b[33m%s", err);
 	}
 }
 
@@ -300,9 +256,9 @@ try {
 				for(let a = cfg.mode_.min_id; a < cfg.mode_.max_id; a++) 
 				{
 					slaveBuy(a)
-					await sleep(cfg.timeout)
-					slaveJob("NodeJS top", a)
-					await sleep(cfg.timeout);
+						await sleep(rand(2100, 8000))
+					slaveJob("1", a)
+						await sleep(rand(2100, 8000));
 				}
 			break;
 			case 2:
