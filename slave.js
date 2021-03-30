@@ -8,8 +8,7 @@ const rl = readline.createInterface({
 });
 const cfg = require('./config.js')
 
-let Datastore = require('nedb'),
-db = new Datastore({filename: __dirname + '/accs.db', autoload: true}) 
+let APP_URL = 'https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/';
 
 let rand = (min, max) => {
   let rand = min + Math.random() * (max + 1 - min);
@@ -20,22 +19,16 @@ let sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-let insert = (obj) => {
-	db.insert(obj, (err, doc) => {console.log(`[BD] ++++++++++++++++`)})
-}
-let removeAll = () => {
-	db.remove({}, { multi: true }, (err, docs) => {console.log(docs)});
-}
-
 let slaveBuy = async (id) => {
 	try {
-		const {body} = await got.post("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/buySlave", {
+		const {body} = await got.post(APP_URL + 'buySlave', {
 			responseType: "json",
 			headers: {
 				"authorization": cfg.auth,
 				"user-agent": cfg.ua,
 				"referer": cfg.prod,
-				"origin": cfg.prod
+				"origin": cfg.prod,
+				"sec-fetch-site": "cross-site"
 			},
 			json: {slave_id: id}
 		})
@@ -58,13 +51,14 @@ let slaveBuy = async (id) => {
 
 let slaveFetter = async (id) => {
 	try {
-		const {body} = await got.post("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/buyFetter", {
+		const {body} = await got.post(APP_URL + "buyFetter", {
 			responseType: "json",
 			headers: {
 				"authorization": cfg.auth,
 				"user-agent": cfg.ua,
 				"referer": cfg.prod,
-				"origin": cfg.prod
+				"origin": cfg.prod,
+				"sec-fetch-site": "cross-site"
 			},
 			json: {slave_id: id}
 		})
@@ -88,13 +82,14 @@ let slaveFetter = async (id) => {
 
 let slaveJob = async (name, id) =>  {
 	try {
-		const {body} = await got.post("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/jobSlave", {
+		const {body} = await got.post(APP_URL + "jobSlave", {
 			responseType: "json",
 			headers: {
 				"authorization": cfg.auth,
 				"user-agent": cfg.ua,
 				"referer": cfg.prod,
-				"origin": cfg.prod
+				"origin": cfg.prod,
+				"sec-fetch-site": "cross-site"
 			},
 			json: {name: name, slave_id: id}
 		})
@@ -117,13 +112,14 @@ let slaveJob = async (name, id) =>  {
 }
 let slaveUser = async (id) => {
 	try {
-		const {body} = await got.get("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/user?id="+id, {
+		const {body} = await got.get(APP_URL + "user?id="+id, {
 			responseType: "json",
 			headers: {
 				"authorization": cfg.auth,
 				"user-agent": cfg.ua,
 				"referer": cfg.prod,
-				"origin": cfg.prod
+				"origin": cfg.prod,
+				"sec-fetch-site": "cross-site"
 			}
 		})
 
@@ -148,13 +144,14 @@ let slaveUser = async (id) => {
 }
 let slaveMaster = async (id) => {
 	try {
-		const {body} = await got.get("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/user?id="+id, {
+		const {body} = await got.get(APP_URL + "user?id="+id, {
 			responseType: "json",
 			headers: {
 				"authorization": cfg.auth,
 				"user-agent": cfg.ua,
 				"referer": cfg.prod,
-				"origin": cfg.prod
+				"origin": cfg.prod,
+				"sec-fetch-site": "cross-site"
 			}
 		})
 
@@ -166,7 +163,7 @@ let slaveMaster = async (id) => {
 		{	
 			if(body.id)
 			{
-				if(body.master_id == 0) return false;
+				if(body.master_id < 1) return 123;
 				slaveList(body.master_id)
 				console.log('\x1b[45m%s\x1b[0m%s\x1b[32m%s\x1b[0m%s', '[X]', '[', `${body.id}`, ']', `Найден Dungeon Master`)
 			}
@@ -180,7 +177,7 @@ let slaveMaster = async (id) => {
 }
 let slaveList = async (id) => {
 	try {
-		const {body} = await got.get("https://pixel.w84.vkforms.ru/HappySanta/slaves/1.0.0/slaveList?id="+id, {
+		const {body} = await got.get(APP_URL + "slaveList?id="+id, {
 			responseType: "json",
 			headers: {
 				"authorization": cfg.auth,
@@ -191,7 +188,7 @@ let slaveList = async (id) => {
 		})
 		for(let i in body.slaves)
 		{
-				if((body.slaves[i].price >= cfg.mode_.min_buy) && body.slaves[i].price <= cfg.mode_.max_buy && body.slaves[i].item_type == "user")
+				if((body.slaves[i].price >= cfg.mode_.min_buy) && (body.slaves[i].price <= cfg.mode_.max_buy && body.slaves[i].item_type == "user") && body.slaves[i].fetter_to == 0)
 				{
 						slaveBuy(body.slaves[i].id);
 							await sleep(rand(cfg.min_delay, cfg.max_delay));
@@ -210,7 +207,12 @@ let slaveList = async (id) => {
 		}
 		if(!body.slaves[0])
 		{
-			return slaveMaster(id)
+			let master = await slaveMaster(id);
+			if(master == 123)
+			{
+				await sleep(rand(2100, 3800))
+				return slaveUser(rand(1000000,631111111))
+			}
 		}
 	} catch (ex) {
 		let res = ex.response.body;
@@ -247,7 +249,7 @@ let handleError = (err) => {
 	}
 }
 
-let arr = ['1', 'НЕ ВОРОВАТЬ', '❤', '💎', '😊', '🥰', '...', 'Раб', '😁', 'хахавзха', 'Не трогать!'];
+let arr = cfg.jobNames;
 
 try {
 	async function main() {
@@ -256,9 +258,9 @@ try {
 				for(let a = cfg.mode_.min_id; a < cfg.mode_.max_id; a++) 
 				{
 					slaveBuy(a)
-						await sleep(rand(2100, 8000))
+						await sleep(rand(2100, 4400))
 					slaveJob("1", a)
-						await sleep(rand(2100, 8000));
+						await sleep(rand(2100, 4400));
 				}
 			break;
 			case 2:
